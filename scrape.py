@@ -1,6 +1,8 @@
 import urllib3
+import urllib.request
 from bs4 import BeautifulSoup
 from post import Post
+import os
 
 
 def make_links():
@@ -13,6 +15,7 @@ def make_links():
             else:
                 extensions.append("/201{}/{}".format(i, j))
     return extensions
+
 
 def main_scrape(url):
     """A function that scrapes the main page"""
@@ -43,7 +46,31 @@ def main_scrape(url):
                 post.add_paragraph(paragraph)
             i += 1
         #images
-
+        try:
+            for i in body.find_all('img'):
+                try:
+                    imgUrl = str(i['data-orig-file'])
+                    imgName = imgUrl.split(".com")[1].replace("/", "_")
+                    post.add_image([imgName, None]) # name, caption
+                    #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
+                except KeyError:
+                    imgUrl = str(i['src']).split('?')[0]
+                    imgName = imgUrl.split(".com")[1].replace("/", "_")
+                    post.add_image([imgName, None]) # name, caption
+                    #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
+            for d in body.find_all('div', {"class": "wp-caption"}):
+                try:
+                    imgUrl = str(d.find('img')['data-orig-file'])
+                    imgName = imgUrl.split(".com")[1].replace("/", "_")
+                    post.add_image([imgName, (d.find('p')).string])
+                    #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
+                except KeyError:
+                    imgUrl = str(d.find('img')['src']).split('?')[0]
+                    imgName = imgUrl.split(".com")[1].replace("/", "_")
+                    post.add_image([imgName, (d.find('p')).string])
+                    #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
+        except: #skip WP junk
+            pass
         #end
         global_articles.append(post)
     print("done with", url)
@@ -76,6 +103,11 @@ def special_scrape(url):
             post.add_paragraph(paragraph)
         i += 1
     #images
+    for i in body.find_all('img'):
+        imgUrl = str(i['data-orig-file'])
+        imgName = imgUrl.split(".com")[1].replace("/", "_")
+        post.add_image([imgName, None]) # name, caption
+        #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
     global_articles.append(post)
     print("done with", url)
 

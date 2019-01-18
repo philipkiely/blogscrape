@@ -17,8 +17,8 @@ class Post:
     def set_endnotes(self, str):
         self.endnotes = str
 
-    def add_image(self, path, subtitle):
-        self.photos.append((path, subtitle))
+    def add_image(self, image):
+        self.photos.append(image)
 
     def add_paragraph(self, str):
         self.paragraphs.append(str)
