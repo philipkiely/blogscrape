@@ -3,6 +3,7 @@ import urllib.request
 from bs4 import BeautifulSoup
 from post import Post
 import os
+from docx import Document
 
 
 def make_links():
@@ -112,8 +113,30 @@ def special_scrape(url):
     print("done with", url)
 
 
+def make_doc():
+    document = Document()
+    document.add_heading('Overneath It All', 0)
+    for art in global_articles:
+        document.add_heading(art.title, level=1)
+        document.add_paragraph(art.date)
+        for photo in art.photos:
+            document.add_picture('img/' + photo[0])
+            if photo[1] is not None:
+                document.add_paragraph(photo[1])
+        if art.subtitle:
+            p = document.add_paragraph()
+            p.add_run(art.subtitle).italic = True
+        for p in art.paragraphs:
+            document.add_paragraph(p)
+        if art.endnotes:
+            p = document.add_paragraph()
+            p.add_run(art.endnotes).italic = True
+        document.add_page_break()
+    document.save("overneathitall.docx")
+
+
 if __name__ == "__main__":
-    global_articles = []
+    """global_articles = []
     links = make_links()
     for link in links:
         print(link)
@@ -121,4 +144,14 @@ if __name__ == "__main__":
     print(len(global_articles))
     special_scrape("https://overneathitall.com/living-small/")
     print(len(global_articles))
+    """
+    global_articles = []
+    post = Post("TEST POST", "1/30/2019")
+    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
+    post.set_subtitle("This is the subtitle. It is italic")
+    post.set_endnotes("These are the endnotes, also italic, and for some reason plural while the subtitle is singular, perhaps because these are longer.")
+    global_articles.append(post)
+    make_doc()
     print("done")
