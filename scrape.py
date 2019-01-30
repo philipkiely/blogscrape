@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from post import Post
 import os
 from docx import Document
+from docx.shared import Inches
 
 
 def make_links():
@@ -119,13 +120,13 @@ def make_doc():
     for art in global_articles:
         document.add_heading(art.title, level=1)
         document.add_paragraph(art.date)
-        for photo in art.photos:
-            document.add_picture('img/' + photo[0])
-            if photo[1] is not None:
-                document.add_paragraph(photo[1])
         if art.subtitle:
             p = document.add_paragraph()
             p.add_run(art.subtitle).italic = True
+        for photo in art.photos:
+            document.add_picture('img/' + photo[0], width=Inches(2))
+            if photo[1] is not None:
+                document.add_paragraph(photo[1])
         for p in art.paragraphs:
             document.add_paragraph(p)
         if art.endnotes:
@@ -152,6 +153,8 @@ if __name__ == "__main__":
     post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
     post.set_subtitle("This is the subtitle. It is italic")
     post.set_endnotes("These are the endnotes, also italic, and for some reason plural while the subtitle is singular, perhaps because these are longer.")
+    post.add_image(["_2011_03_ocean.jpg", None])
+    post.add_image(["_2011_03_ocean.jpg", "Ocean picture is a picture of the ocean"])
     global_articles.append(post)
     make_doc()
     print("done")
