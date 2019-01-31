@@ -7,6 +7,7 @@ from docx import Document
 from docx.shared import Inches
 
 
+#generates links across full range of dates
 def make_links():
     """make full range of dates to use"""
     extensions = []
@@ -19,6 +20,7 @@ def make_links():
     return extensions
 
 
+#gets most blog posts
 def main_scrape(url):
     """A function that scrapes the main page"""
     http = urllib3.PoolManager()
@@ -30,6 +32,7 @@ def main_scrape(url):
     soup = BeautifulSoup(page, 'lxml')
     contents = soup.find('div', {'id': 'primary-content'})
     articles = contents.find_all("div", {'class': "post-wrapper"})
+    posts = []
     for art in articles:
         #title and date
         title = (art.find('h2', {'class': 'post-title'})).find('a').string
@@ -45,7 +48,7 @@ def main_scrape(url):
                 else:
                     post.set_endnotes((paragraph.find('em')).string)
             else:
-                post.add_paragraph(paragraph)
+                post.add_paragraph(paragraph.string)
             i += 1
         #images
         try:
@@ -74,10 +77,13 @@ def main_scrape(url):
         except: #skip WP junk
             pass
         #end
-        global_articles.append(post)
+        posts.append(post)
+    for p in reversed(posts):
+        global_articles.append(p)
     print("done with", url)
 
 
+#gets a special post and inserts it correctly
 def special_scrape(url):
     """a function that handles a single edge-case page"""
     http = urllib3.PoolManager()
@@ -93,7 +99,7 @@ def special_scrape(url):
     date = "July 1, 2017"
     post = Post(title, date)
     #text
-    body = art.find("div", {"class": 'enty'})
+    body = art.find("div", {"class": 'entry'})
     i = 0
     for paragraph in body.find_all('p'):
         if paragraph.find('em') is not None:
@@ -102,7 +108,7 @@ def special_scrape(url):
             else:
                 post.set_endnotes((paragraph.find('em')).string)
         else:
-            post.add_paragraph(paragraph)
+            post.add_paragraph(paragraph.string)
         i += 1
     #images
     for i in body.find_all('img'):
@@ -110,13 +116,20 @@ def special_scrape(url):
         imgName = imgUrl.split(".com")[1].replace("/", "_")
         post.add_image([imgName, None]) # name, caption
         #urllib.request.urlretrieve(imgUrl, os.path.basename("img/" + imgName))
-    global_articles.append(post)
     print("done with", url)
+    return global_articles[:-17] + [post] + global_articles[-17:]
 
 
+#processes everything into the word document
 def make_doc():
     document = Document()
     document.add_heading('Overneath It All', 0)
+    document.add_paragraph("Title Page")
+    document.add_page_break()
+    document.add_heading("Table of Contents", level=1)
+    for art in global_articles:
+        document.add_paragraph(art.title + " ... " + art.date)
+    document.add_page_break()
     for art in global_articles:
         document.add_heading(art.title, level=1)
         document.add_paragraph(art.date)
@@ -124,11 +137,14 @@ def make_doc():
             p = document.add_paragraph()
             p.add_run(art.subtitle).italic = True
         for photo in art.photos:
-            document.add_picture('img/' + photo[0], width=Inches(2))
-            if photo[1] is not None:
-                document.add_paragraph(photo[1])
+            try:
+                document.add_picture('img/' + photo[0], width=Inches(2.5))
+                if photo[1] is not None:
+                    document.add_paragraph(photo[1])
+            except: #some stuff is tagged as photos but is not
+                pass
         for p in art.paragraphs:
-            document.add_paragraph(p)
+            document.add_paragraph(str(p))
         if art.endnotes:
             p = document.add_paragraph()
             p.add_run(art.endnotes).italic = True
@@ -137,24 +153,13 @@ def make_doc():
 
 
 if __name__ == "__main__":
-    """global_articles = []
+    global_articles = []
     links = make_links()
     for link in links:
         print(link)
         main_scrape("https://overneathitall.com" + link)
     print(len(global_articles))
-    special_scrape("https://overneathitall.com/living-small/")
+    global_articles = special_scrape("https://overneathitall.com/living-small/")
     print(len(global_articles))
-    """
-    global_articles = []
-    post = Post("TEST POST", "1/30/2019")
-    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-    post.add_paragraph("Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
-    post.set_subtitle("This is the subtitle. It is italic")
-    post.set_endnotes("These are the endnotes, also italic, and for some reason plural while the subtitle is singular, perhaps because these are longer.")
-    post.add_image(["_2011_03_ocean.jpg", None])
-    post.add_image(["_2011_03_ocean.jpg", "Ocean picture is a picture of the ocean"])
-    global_articles.append(post)
     make_doc()
     print("done")
